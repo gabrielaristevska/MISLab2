@@ -4,8 +4,15 @@ import 'meal_card.dart';
 
 class MealGrid extends StatelessWidget {
   final List<Meal> meals;
+  final List<Meal> favorites;
+  final Function(Meal) onFavoriteToggle;
 
-  const MealGrid({super.key, required this.meals});
+  const MealGrid({
+    super.key,
+    required this.meals,
+    required this.favorites,
+    required this.onFavoriteToggle,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +23,14 @@ class MealGrid extends StatelessWidget {
         childAspectRatio: 0.7,
       ),
       itemBuilder: (context, index) {
-        return MealCard(meal: meals[index]);
+        final meal = meals[index];
+        final isFav = favorites.contains(meal);
+
+        return MealCard(
+          meal: meal,
+          isFavorite: isFav,
+          onFavoriteToggle: () => onFavoriteToggle(meal),
+        );
       },
     );
   }

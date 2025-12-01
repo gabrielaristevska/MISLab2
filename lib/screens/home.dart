@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import '../models/category_model.dart';
 import '../widgets/category_grid.dart';
 import '../services/api_service.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:permission_handler/permission_handler.dart';
+
+final FlutterLocalNotificationsPlugin localNotifs = FlutterLocalNotificationsPlugin();
 
 class MyHomePage extends StatefulWidget {
   final String title;
@@ -25,7 +29,49 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
+    _requestNotificationPermission();
     _loadCategoryList();
+    _initDailyNotification();
+  }
+
+  Future<void> _requestNotificationPermission() async {
+    var status = await Permission.notification.status;
+    if (!status.isGranted) {
+      status = await Permission.notification.request();
+    }
+
+    if (status.isGranted) {
+      debugPrint("Notification permission granted");
+    } else {
+      debugPrint("Notification permission denied");
+    }
+  }
+
+  Future<void> _initDailyNotification() async {
+    const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const initSettings = InitializationSettings(android: androidInit);
+    await localNotifs.initialize(initSettings);
+
+    _scheduleDailyRecipeReminder();
+  }
+
+  Future<void> _scheduleDailyRecipeReminder() async {
+    const androidDetails = AndroidNotificationDetails(
+      'daily_channel',
+      'Daily Notifications',
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+    const details = NotificationDetails(android: androidDetails);
+
+    await localNotifs.periodicallyShow(
+      100,
+      'Recipe Reminder',
+      'See today’s random recipe!',
+      RepeatInterval.daily,
+      details,
+      androidAllowWhileIdle: true,
+    );
   }
 
   Future<void> _loadCategoryList() async {
@@ -46,8 +92,7 @@ class _MyHomePageState extends State<MyHomePage> {
         _filteredCategory = _category;
       } else {
         _filteredCategory = _category
-            .where((c) =>
-            c.strCategory.toLowerCase().contains(query.toLowerCase()))
+            .where((c) => c.strCategory.toLowerCase().contains(query.toLowerCase()))
             .toList();
       }
     });

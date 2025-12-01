@@ -5,6 +5,7 @@ import '../widgets/meal_grid.dart';
 
 class FoodsByCategoryPage extends StatefulWidget {
   final String category;
+
   const FoodsByCategoryPage({super.key, required this.category});
 
   @override
@@ -19,6 +20,7 @@ class _FoodsByCategoryPageState extends State<FoodsByCategoryPage> {
   String _searchQuery = '';
   final ApiService _apiService = ApiService();
   final TextEditingController _searchController = TextEditingController();
+  List<Meal> _favoriteMeals = [];
 
   @override
   void initState() {
@@ -64,65 +66,104 @@ class _FoodsByCategoryPageState extends State<FoodsByCategoryPage> {
     });
   }
 
+  void _toggleFavorite(Meal meal) {
+    setState(() {
+      if (_favoriteMeals.contains(meal)) {
+        _favoriteMeals.remove(meal);
+      } else {
+        _favoriteMeals.add(meal);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Meals: ${widget.category}")),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search meal by name...',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              onChanged: _filterMeals,
-            ),
-          ),
-          Expanded(
-            child: _filteredMeals.isEmpty
-                ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.search_off,
-                      size: 64, color: Colors.grey),
-                  const SizedBox(height: 16),
-                  const Text('No meals found',
-                      style: TextStyle(
-                          fontSize: 18, color: Colors.grey)),
-                  const SizedBox(height: 8),
-                  TextButton(
-                    onPressed: _isSearching
-                        ? null
-                        : () => _searchMealByName(_searchQuery),
-                    child: _isSearching
-                        ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2),
-                    )
-                        : const Text('Search in API'),
-                  ),
-                ],
-              ),
-            )
-                : Padding(
-              padding:
-              const EdgeInsets.symmetric(horizontal: 12),
-              child: MealGrid(meals: _filteredMeals),
-            ),
+      appBar: AppBar(
+        title: Text("Meals: ${widget.category}"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.favorite),
+            tooltip: "Favorites",
+            onPressed: () {
+              Navigator.pushNamed(
+                context,
+                "/favorites",
+                arguments: {
+                  "favorites": _favoriteMeals,
+                  "onFavoriteToggle": _toggleFavorite,
+                },
+              );
+            },
           ),
         ],
       ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Search meal by name...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    onChanged: _filterMeals,
+                  ),
+                ),
+                Expanded(
+                  child: _filteredMeals.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.search_off,
+                                size: 64,
+                                color: Colors.grey,
+                              ),
+                              const SizedBox(height: 16),
+                              const Text(
+                                'No meals found',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              TextButton(
+                                onPressed: _isSearching
+                                    ? null
+                                    : () => _searchMealByName(_searchQuery),
+                                child: _isSearching
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Text('Search in API'),
+                              ),
+                            ],
+                          ),
+                        )
+                      : Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: MealGrid(
+                            meals: _filteredMeals,
+                            favorites: _favoriteMeals,
+                            onFavoriteToggle: _toggleFavorite,
+                          ),
+                        ),
+                ),
+              ],
+            ),
     );
   }
 }
